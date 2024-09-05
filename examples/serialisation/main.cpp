@@ -27,7 +27,7 @@ struct Bar : public Foo
 	bool on;
 };
 
-int main()
+auto main() -> int
 {
 	constexpr auto fooReflector = refl::refl<Foo>("Foo")
 		.add("age", &Foo::age)
