@@ -1,4 +1,6 @@
+#pragma once
 #include <tuple>
+#include <string_view>
 
 namespace refl
 {
@@ -23,27 +25,35 @@ namespace refl
 		T Parent::* _ptr;
 	};
 
-	template<typename T>
-	struct is_member
-	{
-		constexpr static bool value = false;
-	};
+    namespace traits
+    {
+        template<typename T>
+        struct is_member
+        {
+            constexpr static bool value = false;
+        };
 
-	template<typename Parent, typename T>
-	struct is_member<member<Parent, T>>
-	{
-		constexpr static bool value = true;
-	};
+        template<typename Parent, typename T>
+        struct is_member<member<Parent, T>>
+        {
+            constexpr static bool value = true;
+        };
 
-	template<typename T>
-	constexpr bool is_member_v = is_member<T>::value;
+        template<typename T>
+        constexpr bool is_member_v = is_member<T>::value;
+    }
 
-	template<typename T>
-	concept Member = is_member_v<T>;
+    namespace meta
+    {
+
+        template<typename T>
+        concept member = traits::is_member_v<T>;
+    }
 
 	template<typename T, typename ... Args>
 	struct reflector : public std::tuple<Args...>
 	{
+        using inner_class = T;
 		using inner_tuple = std::tuple<Args...>;
 
 		constexpr reflector(std::string_view const name, Args&& ... args) : std::tuple<Args...>(std::make_tuple<Args...>(std::forward<Args>(args)...)), _className(name) {
@@ -54,7 +64,7 @@ namespace refl
 
 		}
 
-		template<Member member>
+        template<meta::member member>
 		constexpr auto add(member&& m) const -> decltype(auto) {
 			return reflector<T, Args..., member>(_className,
 				std::tuple_cat(static_cast<inner_tuple const&>(*this), std::make_tuple(std::forward<member>(m)))
@@ -78,11 +88,30 @@ namespace refl
 
 	template<typename Func, typename T, typename ... Args>
 	auto apply(Func&& func, reflector<T, Args...>& r) -> decltype(auto) {
-		return std::apply(func, static_cast<reflector<T, Args...>::inner_tuple&>(r));
+        return std::apply(func, static_cast<typename reflector<T, Args...>::inner_tuple&>(r));
 	}
 
 	template<typename Func, typename T, typename ... Args>
 	auto apply(Func && func, reflector<T, Args...> const& r) -> decltype(auto) {
-		return std::apply(func, static_cast<reflector<T, Args...>::inner_tuple const&>(r));
+        return std::apply(func, static_cast<typename reflector<T, Args...>::inner_tuple const&>(r));
 	}
+
+    namespace traits
+    {
+        template<typename T>
+        struct is_reflector { static constexpr bool value = false; };
+
+        template<typename ... T>
+        struct is_reflector<reflector<T...>> { static constexpr bool value = true; };
+
+        template<typename T>
+        constexpr bool is_reflector_v = is_reflector<T>::value;
+
+    }
+
+    namespace meta
+    {
+        template<typename T>
+        concept reflector = traits::is_reflector_v<T>;
+    }
 }
