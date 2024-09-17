@@ -7,7 +7,7 @@ add_library(refl INTERFACE refl/refl.hpp refl/registry.hpp)
 
 target_include_directories(refl INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>   # Utilisé lors de la phase de build
-    $<INSTALL_INTERFACE:refl>  # Utilisé lors de l'installation
+    $<INSTALL_INTERFACE:include>  # Utilisé lors de l'installation
     )
 
 install(DIRECTORY refl DESTINATION include)
