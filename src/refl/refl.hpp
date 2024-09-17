@@ -41,6 +41,22 @@ namespace refl
 
         template<typename T>
         constexpr bool is_member_v = is_member<T>::value;
+
+
+        template<typename Tuple, typename Type>
+        struct tuple_contains
+        {
+            static constexpr bool value = false;
+        };
+
+        template<typename Type, typename ... Args>
+        struct tuple_contains<std::tuple<Args...>, Type>
+        {
+            static constexpr bool value = (std::is_same_v<Args, Type> || ...);
+        };
+
+        template<typename Tuple, typename Type>
+        constexpr bool tuple_constains_v = tuple_contains<Tuple, Type>::value;
     }
 
     namespace meta
@@ -50,11 +66,11 @@ namespace refl
         concept member = traits::is_member_v<T>;
     }
 
-	template<typename T, typename ... Args>
-	struct reflector : public std::tuple<Args...>
+    template<typename T, typename bases = std::tuple<>, typename ... Args>
+    struct reflector : public std::tuple<Args...>
 	{
         using inner_class = T;
-		using inner_tuple = std::tuple<Args...>;
+        using inner_tuple = std::tuple<Args...>;
 
 		constexpr reflector(std::string_view const name, Args&& ... args) : std::tuple<Args...>(std::make_tuple<Args...>(std::forward<Args>(args)...)), _className(name) {
 
@@ -65,8 +81,8 @@ namespace refl
 		}
 
         template<meta::member member>
-		constexpr auto add(member&& m) const -> decltype(auto) {
-			return reflector<T, Args..., member>(_className,
+        constexpr auto add(member&& m) const -> decltype(auto) {
+            return reflector<T, bases, Args..., member>(_className,
 				std::tuple_cat(static_cast<inner_tuple const&>(*this), std::make_tuple(std::forward<member>(m)))
 			);
 		}
@@ -74,15 +90,14 @@ namespace refl
 		template<typename U>
 		constexpr auto add(std::string_view const name, U T::* const ptr) const -> decltype(auto) {
 			return this->add(member<T, U>(name, ptr));
-		}
-
+        }
 	private:
 
 		std::string_view _className;
 	};
 
 	template<typename T, typename ... Args>
-	constexpr auto refl(std::string_view const name, Args&& ... args) -> decltype(auto) {
+    constexpr auto refl(std::string_view const name, Args&& ... args) -> decltype(auto) {
 		return reflector<T, Args...>(name, std::forward<Args>(args)...);
 	}
 
