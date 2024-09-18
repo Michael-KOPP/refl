@@ -80,6 +80,13 @@ namespace refl
 
 		}
 
+        template<typename U, typename UBases, typename ... UArgs>
+        constexpr auto add(reflector<U, UBases, UArgs...> const& refl) -> decltype(auto) requires(std::is_base_of_v<U, T>) {
+            return reflector<T, bases, UArgs..., Args...>(_className,
+                std::tuple_cat(static_cast<reflector<U, UBases, UArgs...>::inner_tuple const&>(refl), static_cast<inner_tuple const&>(*this))
+            );
+        }
+
         template<meta::member member>
         constexpr auto add(member&& m) const -> decltype(auto) {
             return reflector<T, bases, Args..., member>(_className,
