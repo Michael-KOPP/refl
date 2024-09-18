@@ -87,9 +87,9 @@ namespace refl
 			);
 		}
 
-		template<typename U>
-		constexpr auto add(std::string_view const name, U T::* const ptr) const -> decltype(auto) {
-			return this->add(member<T, U>(name, ptr));
+		template<typename U, typename V>
+		constexpr auto add(std::string_view const name, U V::* const ptr) const -> decltype(auto) requires(std::is_base_of_v<V, T>) {
+			return this->add(member<V, U>(name, ptr));
         }
 	private:
 
